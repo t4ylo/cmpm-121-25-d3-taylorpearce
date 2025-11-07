@@ -24,7 +24,7 @@ _Key gameplay challenge:_ Collect & craft tokens to reach a target tier.
 
 - [x] Show player location (marker) with fallback center
 
-- [] Draw a visible grid overlay (rectangles)
+- [x] Draw a visible grid overlay (rectangles)
 
 - [] Spawn a handful of tokens at fixed map coords
 
