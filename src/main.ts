@@ -11,7 +11,7 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 );
 const TILE_DEGREES = 1e-4;
 const NEIGHBORHOOD_SIZE = 6;
-const CACHE_SPAWN_PROBABILITY = 0.2;
+const CACHE_SPAWN_PROBABILITY = 0.15;
 
 const mapDiv = document.createElement("div");
 mapDiv.id = "map";
@@ -29,21 +29,35 @@ leaflet.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap",
 }).addTo(map);
 
-leaflet.marker(CLASSROOM_LATLNG).addTo(map).bindTooltip("That's you!");
+const playerMarker = leaflet.marker(CLASSROOM_LATLNG).addTo(map).bindTooltip(
+  "That's you!",
+);
 
-// spawn some rectangles as “cache cells”
+// tokens
+type Token = { id: string; latlng: leaflet.LatLng; marker: leaflet.Marker };
+let tokens: Token[] = [];
+const COLLECT_RADIUS_M = 60;
+
+function spawnToken(i: number, j: number) {
+  const origin = CLASSROOM_LATLNG;
+  const lat = origin.lat + (i + 0.5) * TILE_DEGREES;
+  const lng = origin.lng + (j + 0.5) * TILE_DEGREES;
+  const m = leaflet.marker([lat, lng], {
+    icon: leaflet.divIcon({ html: "🟡", className: "" }),
+  }).addTo(map);
+  m.bindTooltip("Token (click to collect if in range)");
+  m.on("click", () => {
+    const d = playerMarker.getLatLng().distanceTo(leaflet.latLng(lat, lng));
+    if (d <= COLLECT_RADIUS_M) {
+      m.remove();
+      tokens = tokens.filter((t) => t.id !== `${i}-${j}`);
+    } else alert("Too far to collect!");
+  });
+  tokens.push({ id: `${i}-${j}`, latlng: leaflet.latLng(lat, lng), marker: m });
+}
+
 for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
   for (let j = -NEIGHBORHOOD_SIZE; j < NEIGHBORHOOD_SIZE; j++) {
-    if (luck([i, j].toString()) < CACHE_SPAWN_PROBABILITY) {
-      const origin = CLASSROOM_LATLNG;
-      const bounds = leaflet.latLngBounds([
-        [origin.lat + i * TILE_DEGREES, origin.lng + j * TILE_DEGREES],
-        [
-          origin.lat + (i + 1) * TILE_DEGREES,
-          origin.lng + (j + 1) * TILE_DEGREES,
-        ],
-      ]);
-      leaflet.rectangle(bounds, { color: "#888" }).addTo(map);
-    }
+    if (luck([i, j].toString()) < CACHE_SPAWN_PROBABILITY) spawnToken(i, j);
   }
 }

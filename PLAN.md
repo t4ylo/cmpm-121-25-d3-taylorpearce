@@ -26,9 +26,9 @@ _Key gameplay challenge:_ Collect & craft tokens to reach a target tier.
 
 - [x] Draw a visible grid overlay (rectangles)
 
-- [] Spawn a handful of tokens at fixed map coords
+- [x] Spawn a handful of tokens at fixed map coords
 
-- [] Click a token in range (<= 60m) to collect
+- [x] Click a token in range (<= 60m) to collect
 
 - [] Inventory panel shows counts
 
