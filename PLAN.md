@@ -30,9 +30,9 @@ _Key gameplay challenge:_ Collect & craft tokens to reach a target tier.
 
 - [x] Click a token in range (<= 60m) to collect
 
-- [] Inventory panel shows counts
+- [x] Inventory panel shows counts
 
-- [] Crafting: 3x Tier N → 1x Tier N+1
+- [x] Crafting: 3x Tier N → 1x Tier N+1
 
 - [] Persist inventory in localStorage
 
