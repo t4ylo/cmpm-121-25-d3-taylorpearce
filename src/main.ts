@@ -5,7 +5,10 @@ import "./style.css";
 import "./_leafletWorkaround.ts";
 import luck from "./_luck.ts";
 
-const CLASSROOM_LATLNG = leaflet.latLng(36.997936938057016, -122.05703507501151);
+const CLASSROOM_LATLNG = leaflet.latLng(
+  36.997936938057016,
+  -122.05703507501151,
+);
 const TILE_DEGREES = 1e-4;
 const NEIGHBORHOOD_SIZE = 6;
 const CACHE_SPAWN_PROBABILITY = 0.15;
@@ -26,7 +29,9 @@ leaflet.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap",
 }).addTo(map);
 
-const playerMarker = leaflet.marker(CLASSROOM_LATLNG).addTo(map).bindTooltip("That's you!");
+const playerMarker = leaflet.marker(CLASSROOM_LATLNG).addTo(map).bindTooltip(
+  "That's you!",
+);
 
 // panels
 const controlPanel = document.createElement("div");
@@ -57,8 +62,20 @@ function renderInv() {
   (document.getElementById("inv-t3")!).textContent = `Tier3: ${inv.t3}`;
 }
 
-function craft12() { if (inv.t1 >= 3) { inv.t1 -= 3; inv.t2++; renderInv(); } }
-function craft23() { if (inv.t2 >= 3) { inv.t2 -= 3; inv.t3++; renderInv(); } }
+function craft12() {
+  if (inv.t1 >= 3) {
+    inv.t1 -= 3;
+    inv.t2++;
+    renderInv();
+  }
+}
+function craft23() {
+  if (inv.t2 >= 3) {
+    inv.t2 -= 3;
+    inv.t3++;
+    renderInv();
+  }
+}
 
 document.getElementById("craft12")!.addEventListener("click", craft12);
 document.getElementById("craft23")!.addEventListener("click", craft23);
@@ -85,7 +102,7 @@ function spawnToken(i: number, j: number) {
       inv.t1++;
       renderInv();
       m.remove();
-      tokens = tokens.filter(t => t.id !== `${i}-${j}`);
+      tokens = tokens.filter((t) => t.id !== `${i}-${j}`);
     } else {
       alert("Too far to collect!");
     }
