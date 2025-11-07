@@ -32,8 +32,8 @@ _Key gameplay challenge:_ Collect & craft tokens to reach a target tier.
 
 - [x] Inventory panel shows counts
 
-- [x] Crafting: 3x Tier N → 1x Tier N+1
+- [x] Crafting: 2x Tier N → 1x Tier N+1 (was 3 before, mistake)
 
-- [] Persist inventory in localStorage
+- [x] Add a hand and merge mechanism
 
-- [] Win condition: owning ≥ 1 Tier 3 token triggers success banner
+- [x] Win condition: owning ≥ 1 Tier 3 token triggers success banner
