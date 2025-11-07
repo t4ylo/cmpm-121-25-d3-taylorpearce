@@ -99,10 +99,6 @@ function tokenIcon(tier: Tier) {
   });
 }
 
-function getTokenById(id: string) {
-  return tokens.find((t) => t.id === id) ?? null;
-}
-
 function setMarkerTier(tok: Token, newTier: Tier) {
   tok.tier = newTier;
   tok.marker.setIcon(tokenIcon(newTier));
