@@ -3,17 +3,19 @@ import leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./style.css";
 import "./_leafletWorkaround.ts";
-import luck from "./_luck.ts";
 
-const CLASSROOM_LATLNG = leaflet.latLng(
-  36.997936938057016,
-  -122.05703507501151,
-);
+// constants
+// earth spanning and null island
+const ORIGIN = leaflet.latLng(36.997936938057016, -122.05703507501151);
+const CELL_DEG = 1e-4;
 const GAMEPLAY_ZOOM_LEVEL = 19;
-const TILE_DEGREES = 1e-4;
-const NEIGHBORHOOD_SIZE = 8;
-const CACHE_SPAWN_PROBABILITY = 0.10;
 const COLLECT_RADIUS_M = 60;
+
+const TOKEN_FONT_SIZE = 24;
+
+const PER_CELL_TOKEN_CHANCE = 0.25;
+
+// core layout
 
 const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
@@ -37,19 +39,36 @@ handPanel.innerHTML = `
 `;
 controlPanelDiv.append(handPanel);
 
+// movement buttons
+const movePanel = document.createElement("div");
+movePanel.className = "panel";
+movePanel.innerHTML = `
+  <h3>Move</h3>
+  <div class="row" style="gap:6px; justify-content:flex-start;">
+    <button id="moveN">⬆️ North</button>
+    <button id="moveS">⬇️ South</button>
+    <button id="moveW">⬅️ West</button>
+    <button id="moveE">➡️ East</button>
+  </div>
+`;
+controlPanelDiv.append(movePanel);
+
+// win banner
 const winDiv = document.createElement("div");
 winDiv.className = "win";
 winDiv.style.display = "none";
 winDiv.textContent = "🎉 You created a Tier 3 token!";
 controlPanelDiv.append(winDiv);
 
+// map
+
 const map = leaflet.map(mapDiv, {
-  center: CLASSROOM_LATLNG,
+  center: ORIGIN,
   zoom: GAMEPLAY_ZOOM_LEVEL,
   minZoom: GAMEPLAY_ZOOM_LEVEL,
   maxZoom: GAMEPLAY_ZOOM_LEVEL,
   zoomControl: false,
-  scrollWheelZoom: false,
+  scrollWheelZoom: true,
 });
 
 leaflet
@@ -59,43 +78,52 @@ leaflet
   })
   .addTo(map);
 
-const playerMarker = leaflet.marker(CLASSROOM_LATLNG).addTo(map).bindTooltip(
+let playerPos = ORIGIN.clone();
+const playerMarker = leaflet.marker(playerPos).addTo(map).bindTooltip(
   "That's you!",
 );
 
+//grid
+type Cell = { i: number; j: number };
+
+function _latLngToCell(p: leaflet.LatLng): Cell {
+  const i = Math.floor((p.lat - ORIGIN.lat) / CELL_DEG);
+  const j = Math.floor((p.lng - ORIGIN.lng) / CELL_DEG);
+  return { i, j };
+}
+
+function cellBounds(c: Cell): leaflet.LatLngBounds {
+  const lat1 = ORIGIN.lat + c.i * CELL_DEG;
+  const lng1 = ORIGIN.lng + c.j * CELL_DEG;
+  const lat2 = lat1 + CELL_DEG;
+  const lng2 = lng1 + CELL_DEG;
+  return leaflet.latLngBounds([[lat1, lng1], [lat2, lng2]]);
+}
+
+function cellCenter(c: Cell): leaflet.LatLng {
+  const b = cellBounds(c);
+  return b.getCenter();
+}
+
 // tokens and hand
+
 type Tier = 1 | 2 | 3;
 type Token = {
   id: string;
+  cell: Cell;
   latlng: leaflet.LatLng;
   tier: Tier;
   marker: leaflet.Marker;
 };
 let tokens: Token[] = [];
-
 let hand: Tier | null = null;
 let hasWonThisSession = false;
 
-function renderStatus() {
-  (handPanel.querySelector("#hand") as HTMLElement).textContent = hand
-    ? `Tier ${hand}`
-    : "Empty";
-  statusPanelDiv.textContent = hand
-    ? `Holding Tier ${hand}. Click another token of Tier ${hand} within ${COLLECT_RADIUS_M}m to merge.`
-    : `Click a token within ${COLLECT_RADIUS_M}m to pick it up. Press “E” for nearest interaction.`;
-}
-
-function tierFor(i: number, j: number): Tier {
-  const r = luck([i, j, "tier"].toString());
-  if (r < 0.75) return 1;
-  if (r < 0.95) return 2;
-  return 3;
-}
 function tokenIcon(tier: Tier) {
   const emoji = tier === 1 ? "🟡" : tier === 2 ? "🟣" : "🔵";
   return leaflet.divIcon({
     className: "",
-    html: `<div style="font-size:24px;">${emoji}</div>`,
+    html: `<div style="font-size:${TOKEN_FONT_SIZE}px;">${emoji}</div>`,
   });
 }
 
@@ -105,70 +133,139 @@ function setMarkerTier(tok: Token, newTier: Tier) {
   tok.marker.setTooltipContent(`Tier ${newTier} token (click to interact)`);
 }
 
-// click behavior
+function renderStatus() {
+  (handPanel.querySelector("#hand") as HTMLElement).textContent = hand
+    ? `Tier ${hand}`
+    : "Empty";
+  statusPanelDiv.textContent =
+    (hand ? `Holding Tier ${hand}. ` : `Hand empty. `) +
+    `Tokens on screen: ${tokens.length}. Interact within ${COLLECT_RADIUS_M}m.`;
+}
 
-function attachTokenHandlers(tok: Token) {
-  tok.marker.on("click", () => {
-    const d = playerMarker.getLatLng().distanceTo(tok.latlng);
-    if (d > COLLECT_RADIUS_M) {
-      alert(`Too far (${d.toFixed(0)}m). Need ≤ ${COLLECT_RADIUS_M}m.`);
-      return;
-    }
+// spawn & despawn visual cells
 
-    if (hand === null) {
-      hand = tok.tier;
-      renderStatus();
-      tok.marker.remove();
-      tokens = tokens.filter((t) => t.id !== tok.id);
-      return;
-    }
+let cellRects: leaflet.Rectangle[] = [];
 
-    if (hand === tok.tier) {
-      const newTier = (tok.tier + 1) as Tier;
-      setMarkerTier(tok, Math.min(newTier, 3) as Tier);
-      hand = null;
-      renderStatus();
-      if (!hasWonThisSession && tok.tier === 3) {
-        winDiv.style.display = "block";
-        hasWonThisSession = true;
+function clearVisible() {
+  for (const t of tokens) t.marker.remove();
+  tokens = [];
+  for (const r of cellRects) r.remove();
+  cellRects = [];
+}
+
+function spawnForVisibleBounds() {
+  const b = map.getBounds();
+
+  const nw = b.getNorthWest();
+  const se = b.getSouthEast();
+
+  const iMin = Math.floor((se.lat - ORIGIN.lat) / CELL_DEG);
+  const iMax = Math.floor((nw.lat - ORIGIN.lat) / CELL_DEG);
+  const jMin = Math.floor((nw.lng - ORIGIN.lng) / CELL_DEG);
+  const jMax = Math.floor((se.lng - ORIGIN.lng) / CELL_DEG);
+
+  for (let i = iMin; i <= iMax; i++) {
+    for (let j = jMin; j <= jMax; j++) {
+      const cell: Cell = { i, j };
+
+      const rect = leaflet.rectangle(cellBounds(cell), {
+        color: "#999",
+        weight: 1,
+        fillOpacity: 0,
+      });
+      rect.addTo(map);
+      cellRects.push(rect);
+
+      // memoryless
+      if (Math.random() < PER_CELL_TOKEN_CHANCE) {
+        const tier: Tier = Math.random() < 0.75
+          ? 1
+          : (Math.random() < 0.9 ? 2 : 3);
+        const center = cellCenter(cell);
+        const marker = leaflet.marker(center, { icon: tokenIcon(tier) }).addTo(
+          map,
+        );
+        marker.bindTooltip(`Tier ${tier} token (click to interact)`);
+
+        const tok: Token = {
+          id: `${i}-${j}-${Math.random()}`,
+          cell,
+          latlng: center,
+          tier,
+          marker,
+        };
+        tokens.push(tok);
+
+        marker.on("click", () => {
+          const d = playerPos.distanceTo(center);
+          if (d > COLLECT_RADIUS_M) {
+            alert(`Too far (${d.toFixed(0)}m). Need ≤ ${COLLECT_RADIUS_M}m.`);
+            return;
+          }
+
+          if (hand === null) {
+            hand = tok.tier;
+            renderStatus();
+            marker.remove();
+            tokens = tokens.filter((t) => t.id !== tok.id);
+            return;
+          }
+
+          if (hand === tok.tier) {
+            const next = Math.min(tok.tier + 1, 3) as Tier;
+            setMarkerTier(tok, next);
+            hand = null;
+            renderStatus();
+            if (!hasWonThisSession && next === 3) {
+              winDiv.style.display = "block";
+              hasWonThisSession = true;
+            }
+          } else {
+            statusPanelDiv.textContent =
+              `Tiers must match to merge. Holding Tier ${hand}, clicked Tier ${tok.tier}. Tokens on screen: ${tokens.length}.`;
+          }
+        });
       }
-    } else {
-      statusPanelDiv.textContent =
-        `Tiers must match to merge. Holding Tier ${hand}, clicked Tier ${tok.tier}.`;
-    }
-  });
-}
-
-function spawnToken(i: number, j: number) {
-  const lat = CLASSROOM_LATLNG.lat + (i + 0.5) * TILE_DEGREES;
-  const lng = CLASSROOM_LATLNG.lng + (j + 0.5) * TILE_DEGREES;
-  const latlng = leaflet.latLng(lat, lng);
-
-  const tier = tierFor(i, j);
-  const marker = leaflet.marker(latlng, { icon: tokenIcon(tier) }).addTo(map);
-  marker.bindTooltip(`Tier ${tier} token (click to interact)`);
-
-  const tok: Token = { id: `${i}-${j}`, latlng, tier, marker };
-  tokens.push(tok);
-  attachTokenHandlers(tok);
-}
-
-// spawn neighborhood
-for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
-  for (let j = -NEIGHBORHOOD_SIZE; j < NEIGHBORHOOD_SIZE; j++) {
-    if (luck([i, j].toString()) < CACHE_SPAWN_PROBABILITY) {
-      spawnToken(i, j);
     }
   }
 }
 
-// E to pick up nearest
+function rerenderVisible() {
+  clearVisible();
+  spawnForVisibleBounds();
+  renderStatus();
+}
+
+// movement & map events
+
+function movePlayer(di: number, dj: number) {
+  playerPos = leaflet.latLng(
+    playerPos.lat + di * CELL_DEG,
+    playerPos.lng + dj * CELL_DEG,
+  );
+  playerMarker.setLatLng(playerPos);
+  map.panTo(playerPos);
+}
+
+(document.getElementById("moveN") as HTMLButtonElement).onclick = () =>
+  movePlayer(+1, 0);
+(document.getElementById("moveS") as HTMLButtonElement).onclick = () =>
+  movePlayer(-1, 0);
+(document.getElementById("moveW") as HTMLButtonElement).onclick = () =>
+  movePlayer(0, -1);
+(document.getElementById("moveE") as HTMLButtonElement).onclick = () =>
+  movePlayer(0, +1);
+
+map.on("moveend", () => rerenderVisible());
+
 globalThis.addEventListener("keydown", (e) => {
   if (e.key.toLowerCase() !== "e") return;
+  if (tokens.length === 0) return;
+
   let nearest: Token | null = null;
   let best = Infinity;
   for (const t of tokens) {
-    const d = playerMarker.getLatLng().distanceTo(t.latlng);
+    const d = playerPos.distanceTo(t.latlng);
     if (d < best) {
       best = d;
       nearest = t;
@@ -178,22 +275,23 @@ globalThis.addEventListener("keydown", (e) => {
 
   if (hand === null) {
     hand = nearest.tier;
-    renderStatus();
     nearest.marker.remove();
     tokens = tokens.filter((t) => t.id !== nearest.id);
+    renderStatus();
   } else if (hand === nearest.tier) {
-    const newTier = (nearest.tier + 1) as Tier;
-    setMarkerTier(nearest, Math.min(newTier, 3) as Tier);
+    const next = Math.min(nearest.tier + 1, 3) as Tier;
+    setMarkerTier(nearest, next);
     hand = null;
     renderStatus();
-    if (!hasWonThisSession && nearest.tier === 3) {
+    if (!hasWonThisSession && next === 3) {
       winDiv.style.display = "block";
       hasWonThisSession = true;
     }
   } else {
     statusPanelDiv.textContent =
-      `Tiers must match to merge. Holding Tier ${hand}, nearest is Tier ${nearest.tier}.`;
+      `Tiers must match to merge. Holding Tier ${hand}, nearest is Tier ${nearest.tier}. Tokens on screen: ${tokens.length}.`;
   }
 });
 
+rerenderVisible();
 renderStatus();
