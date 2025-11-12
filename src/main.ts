@@ -6,13 +6,14 @@ import "./_leafletWorkaround.ts";
 
 // constants
 // earth spanning and null island
-const ORIGIN = leaflet.latLng(36.997936938057016, -122.05703507501151);
+const ORIGIN = leaflet.latLng(0, 0);
 const CELL_DEG = 1e-4;
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const COLLECT_RADIUS_M = 60;
 const TOKEN_FONT_SIZE = 24;
 const PER_CELL_TOKEN_CHANCE = 0.25;
 const MAX_TIER = 4 as const;
+const START_POS = leaflet.latLng(36.997936938057016, -122.05703507501151);
 
 // core layout
 
@@ -75,7 +76,7 @@ leaflet.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap",
 }).addTo(map);
 
-let playerPos = ORIGIN.clone();
+let playerPos = START_POS;
 const playerMarker = leaflet.marker(playerPos).addTo(map).bindTooltip(
   "That's you!",
 );
