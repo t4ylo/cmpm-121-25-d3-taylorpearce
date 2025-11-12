@@ -55,4 +55,4 @@ _Key gameplay challenge:_ Practice on-map merging to reach a higher target tier 
 
 - [x] Raise victory threshold: show banner when Tier 4 is created via merge (D3.a was Tier 3).
 
-- [] Memoryless despawn/respawn: clear tokens + rectangles, then re-spawn for current viewport.
+- [x] Memoryless despawn/respawn: clear tokens + rectangles, then re-spawn for current viewport.
