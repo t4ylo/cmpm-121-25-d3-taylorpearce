@@ -57,7 +57,7 @@ controlPanelDiv.append(movePanel);
 const winDiv = document.createElement("div");
 winDiv.className = "win";
 winDiv.style.display = "none";
-winDiv.textContent = "🎉 You created a Tier 3 token!";
+winDiv.textContent = "🎉 You created a Tier 4 token!";
 controlPanelDiv.append(winDiv);
 
 // map
@@ -107,7 +107,7 @@ function cellCenter(c: Cell): leaflet.LatLng {
 
 // tokens and hand
 
-type Tier = 1 | 2 | 3;
+type Tier = 1 | 2 | 3 | 4;
 type Token = {
   id: string;
   cell: Cell;
@@ -120,7 +120,13 @@ let hand: Tier | null = null;
 let hasWonThisSession = false;
 
 function tokenIcon(tier: Tier) {
-  const emoji = tier === 1 ? "🟡" : tier === 2 ? "🟣" : "🔵";
+  const emoji = tier === 1
+    ? "🟡"
+    : tier === 2
+    ? "🟣"
+    : tier === 3
+    ? "🔵"
+    : "💎";
   return leaflet.divIcon({
     className: "",
     html: `<div style="font-size:${TOKEN_FONT_SIZE}px;">${emoji}</div>`,
@@ -212,11 +218,11 @@ function spawnForVisibleBounds() {
           }
 
           if (hand === tok.tier) {
-            const next = Math.min(tok.tier + 1, 3) as Tier;
+            const next = Math.min(tok.tier + 1, 4) as Tier;
             setMarkerTier(tok, next);
             hand = null;
             renderStatus();
-            if (!hasWonThisSession && next === 3) {
+            if (!hasWonThisSession && next === 4) {
               winDiv.style.display = "block";
               hasWonThisSession = true;
             }

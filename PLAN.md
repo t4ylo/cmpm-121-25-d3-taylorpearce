@@ -51,12 +51,8 @@ _Key gameplay challenge:_ Practice on-map merging to reach a higher target tier 
 
 - [x] Player movement buttons: N/S/E/W move by one cell; recenter map to player, trigger rerender.
 
-- [] Spawn tokens per visible cell: probabilistic roll per cell with rarity weighting (T1 common, T2 less, T3 rare).
+- [x] Spawn tokens per visible cell: probabilistic roll per cell with rarity weighting (T1 common, T2 less, T3 rare).
+
+- [x] Raise victory threshold: show banner when Tier 4 is created via merge (D3.a was Tier 3).
 
 - [] Memoryless despawn/respawn: clear tokens + rectangles, then re-spawn for current viewport.
-
-- [] Near-player interaction: enforce collection/merge only if within ~60 m of player marker.
-
-- [] On-map merge crafting (hand): empty hand picks up; matching tier merges to next tier on clicked cell.
-
-- [] Raise victory threshold: show banner when Tier 4 is created via merge (D3.a was Tier 3).
