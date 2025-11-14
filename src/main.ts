@@ -178,6 +178,60 @@ function addCell(c: Cell) {
   }).addTo(map);
   cellRects.set(key, rect);
 
+  // restore from memento if present, else roll fresh (flyweight)
+  const saved = cellState.get(key);
+  if (saved) {
+    if (saved.tier !== null) {
+      const center = cellCenter(c);
+      const marker = leaflet.marker(center, { icon: tokenIcon(saved.tier) })
+        .addTo(map);
+      marker.bindTooltip(`Tier ${saved.tier} token (click to interact)`);
+
+      const tok: Token = {
+        id: key,
+        cell: c,
+        latlng: center,
+        tier: saved.tier,
+        marker,
+      };
+      cellTokens.set(key, tok);
+
+      marker.on("click", () => {
+        const d = playerPos.distanceTo(center);
+        if (d > COLLECT_RADIUS_M) {
+          alert(`Too far (${d.toFixed(0)}m). Need ≤ ${COLLECT_RADIUS_M}m.`);
+          return;
+        }
+
+        if (hand === null) {
+          hand = tok.tier;
+          marker.remove();
+          cellTokens.delete(key);
+          cellState.set(key, { tier: null });
+          renderStatus();
+          return;
+        }
+
+        if (hand === tok.tier) {
+          const next = Math.min(tok.tier + 1, MAX_TIER) as Tier;
+          setMarkerTier(tok, next);
+          hand = null;
+          cellState.set(key, { tier: next });
+          if (next === MAX_TIER) {
+            winDiv.textContent = `🎉 You created a Tier ${MAX_TIER} token!`;
+            winDiv.style.display = "block";
+          }
+          renderStatus();
+        } else {
+          statusPanelDiv.textContent =
+            `Tiers must match to merge. Holding Tier ${hand}, clicked Tier ${tok.tier}. Tokens on screen: ${cellTokens.size}.`;
+        }
+      });
+    }
+    return;
+  }
+
+  // no saved state, flyweight random roll
   if (Math.random() < PER_CELL_TOKEN_CHANCE) {
     const r = Math.random();
     const tier: Tier = r < 0.75 ? 1 : r < 0.95 ? 2 : 3;
@@ -208,6 +262,7 @@ function addCell(c: Cell) {
         const next = Math.min(tok.tier + 1, MAX_TIER) as Tier;
         setMarkerTier(tok, next);
         hand = null;
+        cellState.set(key, { tier: next });
         if (next === MAX_TIER) {
           winDiv.textContent = `🎉 You created a Tier ${MAX_TIER} token!`;
           winDiv.style.display = "block";

@@ -68,9 +68,9 @@ _Key gameplay challenge:_ Making the world feel consistent by giving cells a mem
 
 - [x] Persist pickups: cells become tier:null when a token is taken.
 
-- [] Restore modified cells from memento when they re-enter view.
+- [x] Restore modified cells from memento when they re-enter view.
 
-- [] Flyweight: unmodified cells aren’t stored; they roll fresh on first visibility.
+- [x] Flyweight: unmodified cells aren’t stored; they roll fresh on first visibility.
 
 - [] Persist merges to cellState (upgraded tier).
 
