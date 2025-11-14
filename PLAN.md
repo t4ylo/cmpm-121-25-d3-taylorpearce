@@ -72,6 +72,6 @@ _Key gameplay challenge:_ Making the world feel consistent by giving cells a mem
 
 - [x] Flyweight: unmodified cells aren’t stored; they roll fresh on first visibility.
 
-- [] Persist merges to cellState (upgraded tier).
+- [x] Persist merges to cellState (upgraded tier).
 
-- [] Rebuild from scratch on every moveend using saved data + fresh rolls for unmodified cells.
+- [x] Rebuild from scratch on every moveend using saved data + fresh rolls for unmodified cells.

@@ -290,6 +290,26 @@ function removeCell(c: Cell) {
   }
 }
 
+function clearVisibleAll() {
+  for (const r of cellRects.values()) r.remove();
+  for (const t of cellTokens.values()) t.marker.remove();
+  cellRects.clear();
+  cellTokens.clear();
+  visibleKeys.clear();
+}
+
+function _rebuildVisibleFromScratch() {
+  clearVisibleAll();
+  const { iMin, iMax, jMin, jMax } = visibleCellRange();
+  for (let i = iMin; i <= iMax; i++) {
+    for (let j = jMin; j <= jMax; j++) {
+      addCell({ i, j });
+      visibleKeys.add(`${i},${j}`);
+    }
+  }
+  renderStatus();
+}
+
 function updateVisibleCells() {
   const { iMin, iMax, jMin, jMax } = visibleCellRange();
 
@@ -367,6 +387,7 @@ globalThis.addEventListener("keydown", (e) => {
     const next = Math.min(nearest.tier + 1, MAX_TIER) as Tier;
     setMarkerTier(nearest, next);
     hand = null;
+    cellState.set(key, { tier: next });
     if (next === MAX_TIER) {
       winDiv.textContent = `🎉 You created a Tier ${MAX_TIER} token!`;
       winDiv.style.display = "block";
