@@ -56,3 +56,22 @@ _Key gameplay challenge:_ Practice on-map merging to reach a higher target tier 
 - [x] Raise victory threshold: show banner when Tier 4 is created via merge (D3.a was Tier 3).
 
 - [x] Memoryless despawn/respawn: clear tokens + rectangles, then re-spawn for current viewport.
+
+### D3.c: Object Persistance
+
+_Key technical challenge:_ Persisting cell state efficiently using Flyweight + Memento while still re-rendering the entire scene from scratch.
+_Key gameplay challenge:_ Making the world feel consistent by giving cells a memory of past player actions, even as the map scrolls or the player moves away.
+
+#### Steps.3
+
+- [x] Introduce cellState map to store only modified cells (Flyweight).
+
+- [x] Persist pickups: cells become tier:null when a token is taken.
+
+- [] Restore modified cells from memento when they re-enter view.
+
+- [] Flyweight: unmodified cells aren’t stored; they roll fresh on first visibility.
+
+- [] Persist merges to cellState (upgraded tier).
+
+- [] Rebuild from scratch on every moveend using saved data + fresh rolls for unmodified cells.

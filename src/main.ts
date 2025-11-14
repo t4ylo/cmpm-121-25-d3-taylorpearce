@@ -29,6 +29,10 @@ const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
 document.body.append(statusPanelDiv);
 
+// memento
+type CellMemento = { tier: Tier | null };
+const cellState = new Map<string, CellMemento>();
+
 // hand panel
 const handPanel = document.createElement("div");
 handPanel.className = "panel";
@@ -195,6 +199,7 @@ function addCell(c: Cell) {
         hand = tok.tier;
         marker.remove();
         cellTokens.delete(key);
+        cellState.set(key, { tier: null });
         renderStatus();
         return;
       }
@@ -301,6 +306,7 @@ globalThis.addEventListener("keydown", (e) => {
     hand = nearest.tier;
     nearest.marker.remove();
     cellTokens.delete(key);
+    cellState.set(key, { tier: null });
     renderStatus();
   } else if (hand === nearest.tier) {
     const next = Math.min(nearest.tier + 1, MAX_TIER) as Tier;
