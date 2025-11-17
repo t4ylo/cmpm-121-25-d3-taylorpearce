@@ -90,9 +90,9 @@ _Key gameplay challenge:_ Letting the player move their character by physically 
 
 - [x] Refactor the game so **all player movement** goes through the movement Facade instead of directly calling movePlayer from button handlers.
 
-- [ ] Implement a **geolocation-based** movement controller that uses the browser Geolocation API to watch the device position and convert it into grid movements / updates to playerPos.
+- [x] Implement a **geolocation-based** movement controller that uses the browser Geolocation API to watch the device position and convert it into grid movements / updates to playerPos.
 
-- [ ] Add a way to **choose movement mode** (e.g. a toggle in the UI or by reading a movement= query string) and wire it to construct either the button controller or the geolocation controller.
+- [x] Add a way to **choose movement mode** (e.g. a toggle in the UI or by reading a movement= query string) and wire it to construct either the button controller or the geolocation controller.
 
 - [ ] Use localStorage to **serialize game state** (player position, hand, cellState map, and any win state) whenever the state changes.
 

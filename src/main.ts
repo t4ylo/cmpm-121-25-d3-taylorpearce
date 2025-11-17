@@ -57,6 +57,19 @@ movePanel.innerHTML = `
 `;
 controlPanelDiv.append(movePanel);
 
+// movement mode toggle (buttons vs geolocation)
+const modePanel = document.createElement("div");
+modePanel.className = "panel";
+modePanel.innerHTML = `
+  <h3>Movement Mode</h3>
+  <div class="row" style="gap:6px; justify-content:flex-start;">
+    <button id="modeButtons">Buttons</button>
+    <button id="modeGeo">Geolocation</button>
+  </div>
+  <p style="margin-top:6px;font-size:12px;">Switch between on-screen buttons and real-world movement.</p>
+`;
+controlPanelDiv.append(modePanel);
+
 // win banner
 const winDiv = document.createElement("div");
 winDiv.className = "win";
@@ -158,7 +171,7 @@ function renderStatus() {
     : "Empty";
   statusPanelDiv.textContent =
     (hand ? `Holding Tier ${hand}. ` : `Hand empty. `) +
-    `Tokens on screen: ${cellTokens.size}. Interact within ${COLLECT_RADIUS_M}m. Cells reroll only after leaving the screen.`;
+    `Tokens on screen: ${cellTokens.size}. Interact within ${COLLECT_RADIUS_M}m. Cells persist once modified.`;
 }
 
 // diffed viewport
@@ -345,6 +358,13 @@ interface MovementController {
   stop(): void;
 }
 
+function setPlayerPosition(pos: leaflet.LatLng) {
+  playerPos = pos;
+  playerMarker.setLatLng(playerPos);
+  map.panTo(playerPos);
+}
+
+// button-based movement
 class ButtonMovementController implements MovementController {
   private northBtn: HTMLButtonElement;
   private southBtn: HTMLButtonElement;
@@ -373,16 +393,98 @@ class ButtonMovementController implements MovementController {
   }
 }
 
-function movePlayer(di: number, dj: number) {
-  playerPos = leaflet.latLng(
-    playerPos.lat + di * CELL_DEG,
-    playerPos.lng + dj * CELL_DEG,
-  );
-  playerMarker.setLatLng(playerPos);
-  map.panTo(playerPos);
+// geolocation-based movement
+class GeolocationMovementController implements MovementController {
+  private watchId: number | null = null;
+
+  start(): void {
+    if (!("geolocation" in navigator)) {
+      statusPanelDiv.textContent =
+        "Geolocation not supported in this browser. Staying in button mode.";
+      return;
+    }
+
+    this.watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const newPos = leaflet.latLng(lat, lng);
+        setPlayerPosition(newPos);
+      },
+      (err) => {
+        statusPanelDiv.textContent =
+          `Geolocation error: ${err.message}. Try enabling location or switch back to buttons.`;
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 10000,
+      },
+    );
+  }
+
+  stop(): void {
+    if (this.watchId !== null && "geolocation" in navigator) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+    }
+  }
 }
 
+function movePlayer(di: number, dj: number) {
+  setPlayerPosition(
+    leaflet.latLng(
+      playerPos.lat + di * CELL_DEG,
+      playerPos.lng + dj * CELL_DEG,
+    ),
+  );
+}
+
+// which movement controller is active
 let activeMovementController: MovementController | null = null;
+
+// helper to switch modes
+function setMovementMode(mode: "buttons" | "geo") {
+  if (activeMovementController) {
+    activeMovementController.stop();
+  }
+
+  if (mode === "geo") {
+    activeMovementController = new GeolocationMovementController();
+  } else {
+    activeMovementController = new ButtonMovementController();
+  }
+
+  activeMovementController.start();
+
+  // disable the active mode button
+  const buttonsBtn = document.getElementById("modeButtons") as
+    | HTMLButtonElement
+    | null;
+  const geoBtn = document.getElementById("modeGeo") as HTMLButtonElement | null;
+  if (buttonsBtn && geoBtn) {
+    if (mode === "buttons") {
+      buttonsBtn.disabled = true;
+      geoBtn.disabled = false;
+    } else {
+      buttonsBtn.disabled = false;
+      geoBtn.disabled = true;
+    }
+  }
+}
+
+function getInitialMovementMode(): "buttons" | "geo" {
+  const params = new URLSearchParams(globalThis.location.search);
+  const m = params.get("movement");
+  if (m === "geo" || m === "geolocation") return "geo";
+  return "buttons";
+}
+
+// wire up mode buttons
+(document.getElementById("modeButtons") as HTMLButtonElement).onclick = () =>
+  setMovementMode("buttons");
+(document.getElementById("modeGeo") as HTMLButtonElement).onclick = () =>
+  setMovementMode("geo");
 
 map.on("moveend", updateVisibleCells);
 
@@ -425,8 +527,10 @@ globalThis.addEventListener("keydown", (e) => {
   }
 });
 
+// boot
+
 updateVisibleCells();
 renderStatus();
 
-activeMovementController = new ButtonMovementController();
-activeMovementController.start();
+const initialMode = getInitialMovementMode();
+setMovementMode(initialMode);
