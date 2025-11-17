@@ -75,3 +75,27 @@ _Key gameplay challenge:_ Making the world feel consistent by giving cells a mem
 - [x] Persist merges to cellState (upgraded tier).
 
 - [x] Rebuild from scratch on every moveend using saved data + fresh rolls for unmodified cells.
+
+### D3.d: Gameplay Across Real-world Space and Time
+
+_Key technical challenge:_ Hiding different movement systems (buttons vs. geolocation) behind a single movement interface (Facade) while also persisting game state using localStorage so it can be restored on page reload.
+
+_Key gameplay challenge:_ Letting the player move their character by physically moving in the real world, and making the world feel continuous over time by resuming from the same state after closing/reopening the page, with a clear way to start over or switch movement modes.
+
+#### Steps.4
+
+- [x] Define a movement controller interface (e.g. MovementController) that exposes simple methods like start() / stop() or callbacks that update the player position.
+
+- [x] Implement a **button-based** movement controller that wraps the existing N/S/E/W movement logic behind the movement interface.
+
+- [x] Refactor the game so **all player movement** goes through the movement Facade instead of directly calling movePlayer from button handlers.
+
+- [ ] Implement a **geolocation-based** movement controller that uses the browser Geolocation API to watch the device position and convert it into grid movements / updates to playerPos.
+
+- [ ] Add a way to **choose movement mode** (e.g. a toggle in the UI or by reading a movement= query string) and wire it to construct either the button controller or the geolocation controller.
+
+- [ ] Use localStorage to **serialize game state** (player position, hand, cellState map, and any win state) whenever the state changes.
+
+- [ ] On page load, **restore game state** from localStorage if present (rebuild cells from cellState, place the player, restore hand), otherwise start a fresh game.
+
+- [ ] Add a **“New Game”** control that clears persisted state from localStorage and resets the world to a clean starting state.

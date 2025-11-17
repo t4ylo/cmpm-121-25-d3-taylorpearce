@@ -338,7 +338,40 @@ function updateVisibleCells() {
   renderStatus();
 }
 
-// movement & map events
+// movement & map events, facade and movementcontroller
+
+interface MovementController {
+  start(): void;
+  stop(): void;
+}
+
+class ButtonMovementController implements MovementController {
+  private northBtn: HTMLButtonElement;
+  private southBtn: HTMLButtonElement;
+  private westBtn: HTMLButtonElement;
+  private eastBtn: HTMLButtonElement;
+
+  constructor() {
+    this.northBtn = document.getElementById("moveN") as HTMLButtonElement;
+    this.southBtn = document.getElementById("moveS") as HTMLButtonElement;
+    this.westBtn = document.getElementById("moveW") as HTMLButtonElement;
+    this.eastBtn = document.getElementById("moveE") as HTMLButtonElement;
+  }
+
+  start(): void {
+    this.northBtn.onclick = () => movePlayer(+1, 0);
+    this.southBtn.onclick = () => movePlayer(-1, 0);
+    this.westBtn.onclick = () => movePlayer(0, -1);
+    this.eastBtn.onclick = () => movePlayer(0, +1);
+  }
+
+  stop(): void {
+    this.northBtn.onclick = null;
+    this.southBtn.onclick = null;
+    this.westBtn.onclick = null;
+    this.eastBtn.onclick = null;
+  }
+}
 
 function movePlayer(di: number, dj: number) {
   playerPos = leaflet.latLng(
@@ -349,14 +382,7 @@ function movePlayer(di: number, dj: number) {
   map.panTo(playerPos);
 }
 
-(document.getElementById("moveN") as HTMLButtonElement).onclick = () =>
-  movePlayer(+1, 0);
-(document.getElementById("moveS") as HTMLButtonElement).onclick = () =>
-  movePlayer(-1, 0);
-(document.getElementById("moveW") as HTMLButtonElement).onclick = () =>
-  movePlayer(0, -1);
-(document.getElementById("moveE") as HTMLButtonElement).onclick = () =>
-  movePlayer(0, +1);
+let activeMovementController: MovementController | null = null;
 
 map.on("moveend", updateVisibleCells);
 
@@ -401,3 +427,6 @@ globalThis.addEventListener("keydown", (e) => {
 
 updateVisibleCells();
 renderStatus();
+
+activeMovementController = new ButtonMovementController();
+activeMovementController.start();
