@@ -94,8 +94,8 @@ _Key gameplay challenge:_ Letting the player move their character by physically 
 
 - [x] Add a way to **choose movement mode** (e.g. a toggle in the UI or by reading a movement= query string) and wire it to construct either the button controller or the geolocation controller.
 
-- [ ] Use localStorage to **serialize game state** (player position, hand, cellState map, and any win state) whenever the state changes.
+- [x] Use localStorage to **serialize game state** (player position, hand, cellState map, and any win state) whenever the state changes.
 
-- [ ] On page load, **restore game state** from localStorage if present (rebuild cells from cellState, place the player, restore hand), otherwise start a fresh game.
+- [x] On page load, **restore game state** from localStorage if present (rebuild cells from cellState, place the player, restore hand), otherwise start a fresh game.
 
-- [ ] Add a **“New Game”** control that clears persisted state from localStorage and resets the world to a clean starting state.
+- [x] Add a **“New Game”** control that clears persisted state from localStorage and resets the world to a clean starting state.
